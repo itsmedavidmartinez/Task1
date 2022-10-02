@@ -1,0 +1,86 @@
+from qiskit import QuantumRegister
+from qiskit import ClassicalRegister
+from qiskit import QuantumCircuit, execute,IBMQ
+from qiskit.tools.monitor import job_monitor
+
+IBMQ.load_account()
+
+def suma(number1, number2):
+    provider = IBMQ.get_provider(hub='ibm-q')
+    backend = provider.get_backend('ibmq_qasm_simulator')
+
+    len1 = len(number1)
+    len2 = len(number2)
+    if len1 > len2:
+         n = len1
+    else:
+         n = len2
+
+    a = QuantumRegister(n) # Number1
+    b = QuantumRegister(n+1) # Number2
+    c = QuantumRegister(n) # Carry
+    c1 = ClassicalRegister(n+1) # Output
+
+    qc = QuantumCircuit(a, b, c, c1)
+
+    # qubits in sequence (flipping)
+    for i in range(len1):
+        if number1[i] == "1":
+           qc.x(a[len1 - (i+1)])
+    for i in range(len2):
+       if number2[i] == "1":
+          qc.x(b[len2 - (i+1)]) 
+
+
+    #carry gate
+    for i in range(n-1):
+        qc.ccx(a[i], b[i], c[i+1])
+        qc.cx(a[i], b[i])
+        qc.ccx(c[i], b[i], c[i+1])
+
+
+    qc.ccx(a[n-1], b[n-1], b[n])
+    qc.cx(a[n-1], b[n-1])
+    qc.ccx(c[n-1], b[n-1], b[n])
+
+    #Reversing the gate operation
+    qc.cx(c[n-1], b[n-1])
+
+
+    #Reversing the gate operations od carry gates
+    for i in range(n-1):
+        qc.ccx(c[(n-2)-i], b[(n-2)-i], c[(n-1)-i])
+        qc.cx(a[(n-2)-i], b[(n-2)-i])
+        qc.ccx(a[(n-2)-i], b[(n-2)-i], c[(n-1)-i])
+        qc.cx(c[(n-2)-i], b[(n-2)-i])
+        qc.cx(a[(n-2)-i], b[(n-2)-i])
+
+
+    #Measure qubits storing results in classical
+    for i in range(n+1):
+        qc.measure(b[i], c1[i])
+    
+    print("Displaying quantum circuit")
+    
+    job = execute(qc, backend, shots=2)
+
+
+    output = job.result().get_counts()
+    return str(int(list(output.keys())[0]))
+
+
+def multiplier(number1, number2):
+    print("Multiplication in process " + str(number1) + " * " + str(number2) + ". Please be patient")
+    
+    number22 = number2
+    number1 = bin(number1)
+    number2 = bin(number2)
+    number = number1
+    
+    # rule for multiplication: a*b = a summed itself b times
+    for i in range(number22-1):
+        number = suma(number1, number)
+        print("For now, " + str(number1) + " * " + str(i+2) + " = " + str(number))
+    
+    print("Final result of multiplication: " + str(int(number, 2)))
+    return int(number, base=2)
