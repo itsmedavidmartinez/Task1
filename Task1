@@ -1,21 +1,118 @@
+# Multiplier for QOSF screening task made by David Martnez Jaramillo
+  
+# My strategy: Create a quantum algorithm for summing up two numbers and then applying...
+# ... The most basic rule for multiplication (a*b = a + a + a + a + a + a... + a (b times)
+
+# My findings: This quantum algorithm depends on the number of qubits available by the...
+# IBM quantum software. This is an implementation of a classical algorithm into a...
+# quantum one. This is a very expensive algorithm due to its use of for loops. ...
+# This task works better for a classical solution, not a quantum one. Some data on...
+# how much time this algorithm takes is below:
+"""
+Multiplication in process 10 * 20. Please be patient
+
+--- 7.938845157623291 seconds ---
+For now, 0b1010 * 2 = 10100
+
+--- 6.151652097702026 seconds ---
+For now, 0b1010 * 3 = 11110
+
+--- 5.481750726699829 seconds ---
+For now, 0b1010 * 4 = 101000
+
+--- 6.9507527351379395 seconds ---
+For now, 0b1010 * 5 = 110010
+
+--- 67.20733737945557 seconds ---
+For now, 0b1010 * 6 = 111100
+
+--- 6.137321710586548 seconds ---
+For now, 0b1010 * 7 = 1000110
+
+--- 6.709504127502441 seconds ---
+For now, 0b1010 * 8 = 1010000
+
+--- 5.799248456954956 seconds ---
+For now, 0b1010 * 9 = 1011010
+
+--- 5.488314151763916 seconds ---
+For now, 0b1010 * 10 = 1100100
+
+--- 6.102955341339111 seconds ---
+For now, 0b1010 * 11 = 1101110
+
+--- 5.320295333862305 seconds ---
+For now, 0b1010 * 12 = 1111000
+
+--- 6.210169553756714 seconds ---
+For now, 0b1010 * 13 = 10000010
+
+--- 7.2847161293029785 seconds ---
+For now, 0b1010 * 14 = 10001100
+
+--- 6.236750841140747 seconds ---
+For now, 0b1010 * 15 = 10010110
+
+--- 7.242365837097168 seconds ---
+For now, 0b1010 * 16 = 10100000
+
+--- 6.309545040130615 seconds ---
+For now, 0b1010 * 17 = 10101010
+
+--- 6.080237627029419 seconds ---
+For now, 0b1010 * 18 = 10110100
+
+--- 34.19666266441345 seconds ---
+For now, 0b1010 * 19 = 10111110
+
+--- 6.815303802490234 seconds ---
+For now, 0b1010 * 20 = 11001000
+"""
+# As it can be seen, my implementation is not very time efficient. Probably because...
+# ... it has to access IBM quantum lab tools with each addition.
+
+
+
+
+# Importing IBM's Quantum Computing tools
 from qiskit import QuantumRegister
 from qiskit import ClassicalRegister
 from qiskit import QuantumCircuit, execute,IBMQ
 from qiskit.tools.monitor import job_monitor
+import time
 
-IBMQ.load_account()
 
+IBMQ.load_account() # Loading IBM Quantum Lab account for working with their quantum lab tools
+
+
+# sum of two  binary numbers
 def suma(number1, number2):
-    provider = IBMQ.get_provider(hub='ibm-q')
-    backend = provider.get_backend('ibmq_qasm_simulator')
+    """
+    Sums up two binary numbers
+    
+    Inputs ->
+    
+    number1: number1 (binary)
+    number2: number to add to number1 (binary)
+    
+    
+    Output ->
+    The sum in string value (as an integer) of the two binary numbers
+    
+    """
+    
+    provider = IBMQ.get_provider(hub='ibm-q') # Getting provider for running our code
+    backend = provider.get_backend('ibmq_qasm_simulator') # In which quantum computer do we want to run the code?
 
     len1 = len(number1)
     len2 = len(number2)
+    
+    
     if len1 > len2:
          n = len1
     else:
          n = len2
-
+    
     a = QuantumRegister(n) # Number1
     b = QuantumRegister(n+1) # Number2
     c = QuantumRegister(n) # Carry
@@ -23,7 +120,7 @@ def suma(number1, number2):
 
     qc = QuantumCircuit(a, b, c, c1)
 
-    # qubits in sequence (flipping)
+    # Flipping Qubits so that the sequence fits their classical counterpart
     for i in range(len1):
         if number1[i] == "1":
            qc.x(a[len1 - (i+1)])
@@ -32,7 +129,7 @@ def suma(number1, number2):
           qc.x(b[len2 - (i+1)]) 
 
 
-    #carry gate
+    # Carry gate
     for i in range(n-1):
         qc.ccx(a[i], b[i], c[i+1])
         qc.cx(a[i], b[i])
@@ -47,7 +144,7 @@ def suma(number1, number2):
     qc.cx(c[n-1], b[n-1])
 
 
-    #Reversing the gate operations od carry gates
+    #Reversing the gate operations of carry gates
     for i in range(n-1):
         qc.ccx(c[(n-2)-i], b[(n-2)-i], c[(n-1)-i])
         qc.cx(a[(n-2)-i], b[(n-2)-i])
@@ -61,19 +158,38 @@ def suma(number1, number2):
         qc.measure(b[i], c1[i])
     
     print("Displaying quantum circuit")
+        
     
     job = execute(qc, backend, shots=2)
 
 
     output = job.result().get_counts()
+    
+    
     return str(int(list(output.keys())[0]))
 
 
+
+# multiplication of two integer numbers
 def multiplier(number1, number2):
+    """
+    Multiplies two integers together
+    
+    Inputs:
+    Number1: Number to multiply with number2
+    Number2: Number to miltiply with number1
+    
+    
+    Output:
+    The multiplication in integer value of the two integers
+    
+    """
+    
+    
     print("Multiplication in process " + str(number1) + " * " + str(number2) + ". Please be patient")
     
     number22 = number2
-    number1 = bin(number1)
+    number1 = bin(number1) # We wanna work with bits
     number2 = bin(number2)
     number = number1
     
